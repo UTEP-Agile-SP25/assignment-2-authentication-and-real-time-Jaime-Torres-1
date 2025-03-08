@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Authentication</title>
+    <style>
+        .form-container {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>User Authentication</h1>
+    <div>
+        <button id="showSignup">Sign Up</button>
+        <button id="showSignin">Sign In</button>
+    </div>
+
+    <div id="signupForm" class="form-container active">
+        <h2>Create Account</h2>
+        <form id="registrationForm">
+            <input type="email" id="signupEmail" placeholder="Email" required />
+            <input type="password" id="signupPassword" placeholder="Password" required />
+            <button type="submit">Register</button>
+        </form>
+    </div>
+
+    <div id="signinForm" class="form-container">
+        <h2>Sign In</h2>
+        <form id="loginForm">
+            <input type="email" id="signinEmail" placeholder="Email" required />
+            <input type="password" id="signinPassword" placeholder="Password" required />
+            <button type="submit">Sign In</button>
+        </form>
+    </div>
+
+    <script type="module" src="./auth.js"></script>
+
+    <script type="module">
+        import { createUser, signInUser } from "./auth.js";
+
+        const showSignup = document.getElementById("showSignup");
+        const showSignin = document.getElementById("showSignin");
+        const signupForm = document.getElementById("signupForm");
+        const signinForm = document.getElementById("signinForm");
+
+        showSignup.onclick = () => {
+            signupForm.classList.add("active");
+            signinForm.classList.remove("active");
+        };
+
+        showSignin.onclick = () => {
+            signupForm.classList.remove("active");
+            signinForm.classList.add("active");
+        };
+
+        document.getElementById("registrationForm").onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("signupEmail").value;
+            const password = document.getElementById("signupPassword").value;
+            await createUser(email, password);
+        };
+
+        document.getElementById("loginForm").onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("signinEmail").value;
+            const password = document.getElementById("signinPassword").value;
+            await signInUser(email, password);
+        };
+    </script>
+</body>
+</html>

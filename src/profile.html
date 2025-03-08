@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+</head>
+<body>
+    <h1 id="greeting">Welcome!</h1>
+    <div id="displayNameForm">
+        <input type="text" id="displayNameInput" placeholder="Enter Full Name" required />
+        <button id="setDisplayNameButton">Submit</button>
+    </div>
+
+    <h2>Books Collection</h2>
+    <div>
+        <input type="text" id="bookTitle" placeholder="Book Title" required />
+        <input type="text" id="bookAuthor" placeholder="Author" required />
+        <input type="number" id="bookYear" placeholder="Year" required />
+        <button id="addBookButton">Add Book</button>
+    </div>
+    <ul id="booksList"></ul>
+
+    <button id="signOutButton" style="display:none;">Sign Out</button>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, addDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { signOutUser } from "./auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDi_vAvUzJquFJq1zigpShiO_oviMau52w",
+            authDomain: "torres-sandbox.firebaseapp.com",
+            projectId: "torres-sandbox",
+            storageBucket: "torres-sandbox.appspot.com",
+            messagingSenderId: "488386833014",
+            appId: "1:488386833014:web:c63afaf2468d1d60954d57",
+            measurementId: "G-HKBB79S0VX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const greeting = document.getElementById("greeting");
+        const displayNameForm = document.getElementById("displayNameForm");
+        const displayNameInput = document.getElementById("displayNameInput");
+        const setDisplayNameButton = document.getElementById("setDisplayNameButton");
+        const signOutButton = document.getElementById("signOutButton");
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const docRef = doc(db, "users", user.uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists() && docSnap.data().displayName) {
+                    greeting.innerText = `Hi ${docSnap.data().displayName}!`;
+                    displayNameForm.style.display = "none";
+                    signOutButton.style.display = "block";
+                }
+                listenToBooks();
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        setDisplayNameButton.onclick = async () => {
+            const displayName = displayNameInput.value.trim();
+            if (displayName) {
+                const user = auth.currentUser;
+                await setDoc(doc(db, "users", user.uid), { displayName }, { merge: true });
+                greeting.innerText = `Hi ${displayName}!`;
+                displayNameForm.style.display = "none";
+                signOutButton.style.display = "block";
+            }
+        };
+
+        signOutButton.onclick = async () => {
+            await signOutUser();
+        };
+
+        // Books Collection
+        async function addBook(title, author, year) {
+            try {
+                await addDoc(collection(db, "books"), {
+                    title,
+                    author,
+                    year
+                });
+            } catch (e) {
+                console.error("Error adding document: ", e);
+            }
+        }
+
+        async function deleteBook(id) {
+            try {
+                await deleteDoc(doc(db, "books", id));
+            } catch (e) {
+                console.error("Error deleting document: ", e);
+            }
+        }
+
+        function listenToBooks() {
+            const booksRef = collection(db, "books");
+            onSnapshot(booksRef, (snapshot) => {
+                const books = [];
+                snapshot.forEach((doc) => {
+                    books.push({ id: doc.id, ...doc.data() });
+                });
+                updateBooksList(books);
+            });
+        }
+
+        function updateBooksList(books) {
+            const booksList = document.getElementById("booksList");
+            booksList.innerHTML = "";
+            books.forEach(book => {
+                const li = document.createElement("li");
+                li.textContent = `${book.title} by ${book.author} (${book.year})`;
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "Delete";
+                deleteButton.onclick = () => deleteBook(book.id);
+                li.appendChild(deleteButton);
+                booksList.appendChild(li);
+            });
+        }
+
+        document.getElementById("addBookButton").onclick = () => {
+            const title = document.getElementById("bookTitle").value.trim();
+            const author = document.getElementById("bookAuthor").value.trim();
+            const year = parseInt(document.getElementById("bookYear").value, 10);
+
+            if (title && author && year) {
+                addBook(title, author, year);
+                document.getElementById("bookTitle").value = "";
+                document.getElementById("bookAuthor").value = "";
+                document.getElementById("bookYear").value = "";
+            }
+        };
+    </script>
+</body>
+</html>
